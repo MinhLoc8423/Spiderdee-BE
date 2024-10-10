@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
-const uri = "mongodb+srv://mongodb:mongodb@furniture-database.skpnp.mongodb.net/?retryWrites=true&w=majority&appName=furniture-database"
+require('dotenv').config();
+const uri = process.env.MONGODB_URI
 
 const connectDB = async () => {
     try {

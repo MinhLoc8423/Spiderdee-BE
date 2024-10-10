@@ -1,11 +1,19 @@
 const express = require('express');
-const connectDB = require('./src/config/db.js');
 const app = express();
-const port = process.env.port || 3000;
+const port = 3000;
+const connectDB = require('./src/config/databaseConfig');
+const authRoutes = require('./src/routes/authRoute')
+require('./src/config/passportConfig');
 
-app.get('/', (req, res) => {
-  res.send('H!')
-});
+// Middleware to process JSON data
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+
+// Routes
+app.get('/', (req, res) => { res.send('Welcome') });
+app.use('/auth', authRoutes);
+
 
 connectDB();
 
