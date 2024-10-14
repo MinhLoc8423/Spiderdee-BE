@@ -23,10 +23,9 @@ exports.localLogin = (req, res, next) => {
             return res.status(400).json({ status: 400, message: "Authentication Error", errors: err });
         }
         if (!user) {
-            return res.status(401).json({ status: 401, message: 'Incorrect email or password.' });
+            return res.status(401).json({ status: 401, message: info.message });
         }
 
-        // Create JWT
         const token = jwt.sign({
             id: user._id,
             first_name: user.first_name,
@@ -73,13 +72,11 @@ exports.localRegister = async (req, res) => {
     }
 
     try {
-        // Check if email already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ status: 400, message: 'Email already exists' });
         }
 
-        // Create new user
         const user = new User({
             first_name: first_name,
             last_name: last_name,
@@ -102,7 +99,6 @@ exports.googleLogin = passport.authenticate('google', { scope: ['profile', 'emai
 
 exports.googleLoginCallback = async (req, res) => {
     try {
-        // Create JWT token when login is successful
         const token = jwt.sign({
             id: req.user._id,
             first_name: req.user.first_name,
@@ -116,7 +112,15 @@ exports.googleLoginCallback = async (req, res) => {
         res.status(200).json({
             status: 200,
             message: 'Login successful',
-            data: { user: req.user, token: token },
+            data: { user: {
+                _id: req.user._id,
+                first_name: req.user.first_name,
+                last_name: req.user.last_name,
+                email: req.user.email,
+                role_id: req.user.role_id,
+                phone_number: req.user.phone_number,
+                avatar: req.user.avatar,
+            }, token: token },
         });
     } catch (error) {
         res.status(500).json({
@@ -127,9 +131,6 @@ exports.googleLoginCallback = async (req, res) => {
     }
 };
 
-
-
-// Send OTP via email
 exports.sendOTP = async (req, res) => {
     const { email } = req.body;
 
@@ -139,22 +140,18 @@ exports.sendOTP = async (req, res) => {
     }
 
     const generateOTP = () => {
-        // Generate a random number between 100000 and 999999
         return Math.floor(100000 + Math.random() * 900000).toString();
     };
 
-    // Create OTP
     const otp = generateOTP();
-    const otpExpiration = Date.now() + 1 * 60 * 1000; // OTP expiration 5 minutes
+    const otpExpiration = Date.now() + 1 * 60 * 1000; 
 
     try {
-        // Find User in database
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(404).json({ status: 404, message: `User doesn't exist` });
         }
 
-        // Update otp expiration
         user.otp = otp;
         user.expiresAt = otpExpiration;
         await user.save();
@@ -192,7 +189,6 @@ exports.verifyOTP = async (req, res) => {
             return res.status(404).json({ status: 400, message: 'User does not exist' });
         }
 
-        // Check OTP and expiration time
         if (user.otp !== otp) {
             return res.status(400).json({ status: 400, message: 'Invalid OTP' });
         }
@@ -201,8 +197,7 @@ exports.verifyOTP = async (req, res) => {
             return res.status(400).json({ status: 400, message: 'OTP has expired. Please request a new code.' });
         }
 
-        // If OTP is valid, generate temporary token to allow user to update password
-        const otpToken = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '1m' }); // Token expires after 15 minutes
+        const otpToken = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '1m' }); 
         res.status(200).json({
             status: 200,
             message: 'Valid OTP. Please enter new password.',
@@ -214,7 +209,6 @@ exports.verifyOTP = async (req, res) => {
     }
 };
 
-// Update password
 exports.resetPassword = async (req, res) => {
     const { otpToken, newPassword } = req.body;
 
@@ -228,7 +222,6 @@ exports.resetPassword = async (req, res) => {
     }
 
     try {
-        // Xác thực token OTP
         const decoded = jwt.verify(otpToken, process.env.JWT_SECRET);
 
         const user = await User.findOne({ email: decoded.email });
@@ -236,10 +229,9 @@ exports.resetPassword = async (req, res) => {
             return res.status(404).json({ status: 400, message: 'User does not exist' });
         }
 
-        // Cập nhật mật khẩu và xóa OTP
         user.password = await passwordUtils.hashPassword(newPassword);;
-        user.otp = null;  // Xóa OTP
-        user.expiresAt = null; // Xóa thời gian hết hạn OTP
+        user.otp = null;  
+        user.expiresAt = null; 
         await user.save();
         res.status(200).json({ status: 200, message: 'Password updated successfully.' });
     } catch (error) {
