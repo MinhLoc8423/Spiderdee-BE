@@ -9,7 +9,7 @@ const passwordUtils = require('../utils/passwordUtils');
 passport.use(
     new LocalStrategy({ usernameField: 'email', passwordField: 'password' }, async (email, password, done) => {
         try {
-            const user = await User.findOne({ email });
+            const user = await User.findOne({ email }).populate('role_id');
             if (!user) return done(null, false, { message: 'Incorrect email or password.' });
 
             const isMatch = await passwordUtils.matchPassword(password, user.password);
@@ -56,21 +56,16 @@ passport.use(new BearerStrategy(
     async function (token, done) {
         try {
             if (!token) 
-            return done(null, false, { message: 'Token is missing. Please login.' });
+            return done(null, false);
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             const user = await User.findById(decoded.id);
             if (!user) {
-                return done(null, false, { message: 'User not found. Please login again.' });
+                return done(null, false);
             }
+            user.password = null;
             return done(null, user);
         } catch (err) {
-            if (err.name === 'JsonWebTokenError') {
-                return done(null, false, { message: 'Invalid token.' });
-            } else if (err.name === 'TokenExpiredError') {
-                return done(null, false, { message: 'Token has expired. Please login again.' });
-            } else {
-                return done(err, false, { message: 'Failed to authenticate token.' });
-            }
+            return done(err, false);
         }
     }
 ));
