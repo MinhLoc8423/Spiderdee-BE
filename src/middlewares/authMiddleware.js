@@ -5,13 +5,13 @@ const authenticate = (req, res, next) => {
         if (err) {
             return res.status(500).json({
                 status: 500,
-                message: 'Error authenticating',
+                message: 'Error authenticating'
             });
         }
         if (!user) {
             return res.status(401).json({
                 status: 401,
-                message: 'Invalid Token',
+                message: 'Unauthorized'
             });
         }
         req.user = user; 

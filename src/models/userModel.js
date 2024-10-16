@@ -8,21 +8,28 @@ const UserSchema = new Schema({
     },
     first_name: {
         type: String,
+        required: true,
     },
     last_name: {
         type: String,
+        default: null,
     },
     email: {
         type: String,
+        required: true, 
+        unique: true,
     },
     phone_number: {
         type: String,
+        default: null,
     },
     avatar: {
         type: String,
+        default: null,
     },
     password: {
         type: String,
+        default: null,
     },
     otp: {
         type: String,
@@ -34,12 +41,12 @@ const UserSchema = new Schema({
     },
     google_id: {
         type: String,
-    },
-    facebook_id: {
-        type: String,
+        default: null,
     },
     role_id: {
         type: ObjectId,
+        ref: 'Role', 
+        required: true
     },
 }, { timestamps: true }); 
 

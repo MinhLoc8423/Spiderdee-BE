@@ -96,7 +96,12 @@ exports.createProduct = async (req, res) => {
 exports.updateProductById = async (req, res) => {
     try {
         const { id } = req.params;
-
+        if (!id) {
+            return res.status(400).json({
+                status: 400,
+                message: 'Product ID is required'
+            });
+        }
         const { name, description, price, image, category_id } = req.body;
 
         let check = validateUtils.validateString(name);
@@ -122,13 +127,6 @@ exports.updateProductById = async (req, res) => {
         check = validateUtils.validateString(category_id);
         if (check.valid) {
             return res.status(400).json(check.message);
-        }
-
-        if (!id) {
-            return res.status(400).json({
-                status: 400,
-                message: 'Product ID is required'
-            });
         }
 
         const updateData = {
@@ -169,6 +167,12 @@ exports.updateProductById = async (req, res) => {
 exports.deleteProductById = async (req, res) => {
     try {
         const { id } = req.params;
+        if (!id) {
+            return res.status(400).json({
+                status: 400,
+                message: 'Product ID is required'
+            });
+        }
         const deletedProduct = await Product.findByIdAndDelete(id);
 
         if (!deletedProduct) {
