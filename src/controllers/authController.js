@@ -4,6 +4,7 @@ const passwordUtils = require('../utils/passwordUtils');
 const validateUtils = require('../utils/validateUtils');
 const User = require('../models/userModel');
 const transporter = require('../config/emailConfig');
+const Role = require('../models/roleModel');
 require('dotenv').config();
 
 
@@ -77,6 +78,12 @@ exports.localRegister = async (req, res) => {
             return res.status(400).json({ status: 400, message: 'Email already exists' });
         }
 
+        const existRole = await Role.findById({ _id: role_id });
+        if (!existRole) {
+            return res.status(400).json({ status: 400, message: 'Role don\'t exists' });
+        }
+
+
         const user = new User({
             first_name: first_name,
             last_name: last_name,
@@ -112,15 +119,17 @@ exports.googleLoginCallback = async (req, res) => {
         res.status(200).json({
             status: 200,
             message: 'Login successful',
-            data: { user: {
-                _id: req.user._id,
-                first_name: req.user.first_name,
-                last_name: req.user.last_name,
-                email: req.user.email,
-                role_id: req.user.role_id,
-                phone_number: req.user.phone_number,
-                avatar: req.user.avatar,
-            }, token: token },
+            data: {
+                user: {
+                    _id: req.user._id,
+                    first_name: req.user.first_name,
+                    last_name: req.user.last_name,
+                    email: req.user.email,
+                    role_id: req.user.role_id,
+                    phone_number: req.user.phone_number,
+                    avatar: req.user.avatar,
+                }, token: token
+            },
         });
     } catch (error) {
         res.status(500).json({
@@ -144,7 +153,7 @@ exports.sendOTP = async (req, res) => {
     };
 
     const otp = generateOTP();
-    const otpExpiration = Date.now() + 1 * 60 * 1000; 
+    const otpExpiration = Date.now() + 1 * 60 * 1000;
 
     try {
         const user = await User.findOne({ email });
@@ -197,7 +206,7 @@ exports.verifyOTP = async (req, res) => {
             return res.status(400).json({ status: 400, message: 'OTP has expired. Please request a new code.' });
         }
 
-        const otpToken = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '1m' }); 
+        const otpToken = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '1m' });
         res.status(200).json({
             status: 200,
             message: 'Valid OTP. Please enter new password.',
@@ -230,8 +239,8 @@ exports.resetPassword = async (req, res) => {
         }
 
         user.password = await passwordUtils.hashPassword(newPassword);;
-        user.otp = null;  
-        user.expiresAt = null; 
+        user.otp = null;
+        user.expiresAt = null;
         await user.save();
         res.status(200).json({ status: 200, message: 'Password updated successfully.' });
     } catch (error) {

@@ -5,6 +5,7 @@ const User = require('../models/userModel');
 const jwt = require('jsonwebtoken');
 const passport = require('passport');
 const passwordUtils = require('../utils/passwordUtils');
+const Role = require('../models/roleModel');
 
 passport.use(
     new LocalStrategy({ usernameField: 'email', passwordField: 'password' }, async (email, password, done) => {
@@ -31,6 +32,7 @@ passport.use(new GoogleStrategy({
 }, async (accessToken, refreshToken, profile, done) => {
     try {
         let user = await User.findOne({ google_id: profile.id });
+        let role = await Role.find({ role_name: "User"});
         if (user) {
             done(null, user); 
         } else {
@@ -42,7 +44,7 @@ passport.use(new GoogleStrategy({
                 avatar: profile.photos[0].value,
                 password: "",
                 google_id: profile.id,
-                role_id: "67021d1a856304348fd9b3c9",
+                role_id: role[0]._id,
             })
             user.save();
             done(null, user);

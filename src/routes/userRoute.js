@@ -8,8 +8,6 @@ router.get('/users', authenticate, checkPermission("perm_read_user"), userContro
 
 router.get('/users/:id', authenticate, checkPermission("perm_read_user"), userController.getUserById);
 
-router.post('/users', authenticate, checkPermission("perm_create_user"), userController.createUser);
-
 router.put('/users/:id', authenticate, checkPermission("perm_update_user"), userController.updateUser);
 
 router.delete('/users/:id', authenticate, checkPermission("perm_delete_user"), userController.deleteUser);
