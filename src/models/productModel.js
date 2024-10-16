@@ -25,6 +25,7 @@ const ProductSchema = new Schema({
     },
     category_id: {
         type: ObjectId,
+        ref: 'Category',
         required: true, 
     }
 }, { timestamps: true }); 

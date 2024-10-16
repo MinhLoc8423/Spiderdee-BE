@@ -1,4 +1,5 @@
 const Product = require('../models/productModel');
+const Category = require('../models/categoryModel');
 const validateUtils = require('../utils/validateUtils');
 
 exports.getAllProducts = async (req, res) => {
@@ -194,3 +195,34 @@ exports.deleteProductById = async (req, res) => {
     }
 };
 
+exports.searchProducts = async (req, res) => {
+    try {
+        let query = {};
+
+        if (req.query.name) {
+            query.name = { $regex: req.query.name, $options: 'i' };
+        }
+
+        if (req.query.category) {
+            query.category_id = req.query.category;
+        }
+
+        if (req.query.min_price && req.query.max_price) {
+            query.price = { $gte: req.query.min_price, $lte: req.query.max_price };
+        } else if (req.query.min_price) {
+            query.price = { $gte: req.query.min_price };
+        } else if (req.query.max_price) {
+            query.price = { $lte: req.query.max_price };
+        }
+        console.log(query);
+
+        const products = await Product.find(query).populate('category_id');
+        res.status(200).json({
+            status: 200,
+            message: "Successful",
+            data: products,
+        });
+    } catch (error) {
+        res.status(500).json({ status: 200, message: 'Error searching products', error: error.message });
+    }
+};
