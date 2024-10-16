@@ -40,7 +40,16 @@ exports.localLogin = (req, res, next) => {
         res.status(200).json({
             status: 200,
             message: "Login successful",
-            data: { user: user, token: token },
+            data: {
+                user_id: user._id,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                email: user.email,
+                role_id: user.role_id,
+                phone_number: user.phone_number,
+                avatar: user.avatar,
+            },
+            token: token
         });
     })(req, res, next);
 };

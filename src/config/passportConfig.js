@@ -31,7 +31,7 @@ passport.use(new GoogleStrategy({
     callbackURL: "/auth/google/callback"
 }, async (accessToken, refreshToken, profile, done) => {
     try {
-        let user = await User.findOne({ google_id: profile.id });
+        let user = await User.findOne({ google_id: profile.id }).populate('role_id');
         let role = await Role.find({ role_name: "User"});
         if (user) {
             done(null, user); 
