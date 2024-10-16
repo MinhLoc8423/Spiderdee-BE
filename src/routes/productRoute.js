@@ -5,7 +5,9 @@ const authenticate = require('../middlewares/authMiddleware');
 
 router.get('/products', authenticate, productController.getAllProducts);
 
-router.get('/products/:id', authenticate, productController.getProductById);
+router.get('/products/search', authenticate, checkPermission("perm_read_product"), productController.searchProducts);
+
+router.get('/products/:id', authenticate, checkPermission("perm_read_product"), productController.getProductById);
 
 router.post('/products', authenticate, productController.createProduct);
 
