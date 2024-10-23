@@ -155,7 +155,7 @@ exports.sendOTP = async (req, res) => {
     };
 
     const otp = generateOTP();
-    const otpExpiration = Date.now() + 1 * 60 * 1000;
+    const otpExpiration = Date.now() + 5 * 60 * 1000;
 
     try {
         const user = await User.findOne({ email });
