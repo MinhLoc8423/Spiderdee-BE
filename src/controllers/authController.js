@@ -74,17 +74,10 @@ exports.localRegister = async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ status: 400, message: 'Email already exists' });
         }
-
-<<<<<<< Updated upstream
-        // Create new user
-=======
         const existRole = await Role.findOne({ "role_name": "User" });
         if (!existRole) {
             return res.status(400).json({ status: 400, message: 'Role don\'t exists' });
         }
-
-
->>>>>>> Stashed changes
         const user = new User({
             first_name: first_name,
             last_name: last_name,
