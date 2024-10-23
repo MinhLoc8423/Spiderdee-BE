@@ -17,6 +17,7 @@ app.use('/auth', authRoutes);
 
 connectDB();
 
-app.listen(port, () => {
   console.log(`Server is running on port ${port}`)
+app.listen(port, "192.168.1.2",() => {
+  console.log(`Server is running on port 192.168.1.2:${port}`)
 });

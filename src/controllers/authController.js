@@ -46,7 +46,7 @@ exports.localLogin = (req, res, next) => {
 };
 
 exports.localRegister = async (req, res) => {
-    const { first_name, last_name, email, password, phone_number, avatar, google_id, role_id } = req.body;
+    const { first_name, last_name, email, password, phone_number } = req.body;
     var check = validateUtils.validateEmail(email)
     if (check.valid) {
         return res.status(400).json(check.message);
@@ -67,10 +67,6 @@ exports.localRegister = async (req, res) => {
     if (check.valid) {
         return res.status(400).json(check.message);
     }
-    check = validateUtils.validateString(role_id)
-    if (check.valid) {
-        return res.status(400).json(check.message);
-    }
 
     try {
         // Check if email already exists
@@ -79,16 +75,25 @@ exports.localRegister = async (req, res) => {
             return res.status(400).json({ status: 400, message: 'Email already exists' });
         }
 
+<<<<<<< Updated upstream
         // Create new user
+=======
+        const existRole = await Role.findOne({ "role_name": "User" });
+        if (!existRole) {
+            return res.status(400).json({ status: 400, message: 'Role don\'t exists' });
+        }
+
+
+>>>>>>> Stashed changes
         const user = new User({
             first_name: first_name,
             last_name: last_name,
             email: email,
             phone_number: phone_number,
-            avatar: avatar,
+            avatar: "",
             password: await passwordUtils.hashPassword(password),
-            google_id: google_id,
-            role_id: role_id,
+            google_id: "",
+            role_id: existRole._id,
         });
         await user.save();
         return res.status(201).json({ status: 201, message: 'User registered successfully' });
