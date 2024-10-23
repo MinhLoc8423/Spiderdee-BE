@@ -1,19 +1,21 @@
 const LocalStrategy = require('passport-local').Strategy;
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const BearerStrategy = require('passport-http-bearer').Strategy;
 const User = require('../models/userModel');
+const jwt = require('jsonwebtoken');
 const passport = require('passport');
 const passwordUtils = require('../utils/passwordUtils');
+const Role = require('../models/roleModel');
 
 passport.use(
     new LocalStrategy({ usernameField: 'email', passwordField: 'password' }, async (email, password, done) => {
         try {
-            const user = await User.findOne({ email });
+            const user = await User.findOne({ email }).populate('role_id');
             if (!user) return done(null, false, { message: 'Incorrect email or password.' });
 
             const isMatch = await passwordUtils.matchPassword(password, user.password);
             if (!isMatch) return done(null, false, { message: 'Incorrect email or password.' });
 
-            // Remove sensitive data before returning the user
             user.password = undefined;
 
             return done(null, user);
@@ -29,12 +31,11 @@ passport.use(new GoogleStrategy({
     callbackURL: "/auth/google/callback"
 }, async (accessToken, refreshToken, profile, done) => {
     try {
-        // Check if the user already has data 
-        let user = await User.findOne({ google_id: profile.id });
+        let user = await User.findOne({ google_id: profile.id }).populate('role_id');
+        let role = await Role.find({ role_name: "User"});
         if (user) {
-            done(null, user); // If the user already has, return
+            done(null, user); 
         } else {
-            // If not, create a new user profile
             user = await new User({
                 first_name: profile.name.givenName,
                 last_name: profile.name.familyName,
@@ -43,7 +44,7 @@ passport.use(new GoogleStrategy({
                 avatar: profile.photos[0].value,
                 password: "",
                 google_id: profile.id,
-                role_id: "67021d1a856304348fd9b3c9",
+                role_id: role[0]._id,
             })
             user.save();
             done(null, user);
@@ -52,3 +53,21 @@ passport.use(new GoogleStrategy({
         done(err, null);
     }
 }));
+
+passport.use(new BearerStrategy(
+    async function (token, done) {
+        try {
+            if (!token) 
+            return done(null, false);
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const user = await User.findById(decoded.id);
+            if (!user) {
+                return done(null, false);
+            }
+            user.password = null;
+            return done(null, user);
+        } catch (err) {
+            return done(err, false);
+        }
+    }
+));

@@ -3,17 +3,17 @@ const app = express();
 const port = 3000;
 const connectDB = require('./src/config/databaseConfig');
 const authRoutes = require('./src/routes/authRoute')
+const productRoutes = require('./src/routes/productRoute');
+const userRoute = require('./src/routes/userRoute');
 require('./src/config/passportConfig');
 
-// Middleware to process JSON data
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-
-// Routes
-app.get('/', (req, res) => { res.send('Welcome') });
+app.get('/', (req, res) => { res.send('Welcome to Spideree') });
 app.use('/auth', authRoutes);
-
+app.use('/api', productRoutes);
+app.use('/api', userRoute);
 
 connectDB();
 
