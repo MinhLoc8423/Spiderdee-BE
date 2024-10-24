@@ -5,8 +5,13 @@ const connectDB = require('./src/config/databaseConfig');
 const authRoutes = require('./src/routes/authRoute')
 const productRoutes = require('./src/routes/productRoute');
 const userRoute = require('./src/routes/userRoute');
+const cors = require('cors');
 require('./src/config/passportConfig');
 
+
+app.use(cors({
+  origin: 'http://localhost:3001' 
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
