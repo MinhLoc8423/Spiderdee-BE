@@ -4,7 +4,7 @@ const validateUtils = require('../utils/validateUtils');
 
 exports.getAllProducts = async (req, res) => {
     try {
-        const products = await Product.find({});
+        const products = await Product.find({}).populate('category_id').limit(50);
         res.status(200).json({
             status: 200,
             message: "Successful",
@@ -24,7 +24,7 @@ exports.getProductById = async (req, res) => {
                 message: 'Product ID is required'
             });
         }
-        const product = await Product.findById(id);
+        const product = await Product.findById(id).populate('category_id');
         if (!product) {
             return res.status(404).json({
                 status: 404,
@@ -140,7 +140,7 @@ exports.updateProductById = async (req, res) => {
         const updatedProduct = await Product.findByIdAndUpdate(id, updateData, {
             new: true,
             runValidators: true,
-        });
+        }).populate('category_id');
 
         if (!updatedProduct) {
             return res.status(404).json({
@@ -216,7 +216,7 @@ exports.searchProducts = async (req, res) => {
         }
         console.log(query);
 
-        const products = await Product.find(query).populate('category_id');
+        const products = await Product.find(query).populate('category_id').limit(50);
         res.status(200).json({
             status: 200,
             message: "Successful",
