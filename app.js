@@ -11,7 +11,7 @@ require('./src/config/passportConfig');
 
 
 app.use(cors({
-  origin: 'http://localhost:3001' 
+  origin: 'exp://127.0.0.1:8081/--/sign-in' 
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -25,6 +25,6 @@ app.use('/api', categoryRoute);
 connectDB();
 
   console.log(`Server is running on port ${port}`)
-app.listen(port, "192.168.1.2",() => {
+app.listen(port, () => {
   console.log(`Server is running on port 192.168.1.2:${port}`)
 });

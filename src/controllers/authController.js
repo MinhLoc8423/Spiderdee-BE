@@ -133,6 +133,7 @@ exports.googleLoginCallback = async (req, res) => {
                 }, token: token
             },
         });
+        res.redirect(`exp://127.0.0.1:8081/--/sign-in?token=${req.user.accessToken}`);
     } catch (error) {
         res.status(500).json({
             status: 500,
