@@ -10,6 +10,10 @@ const OrderSchema = new Schema({
         type: mongoose.Types.Decimal128,
         required: true,
     },
+    status: {
+        type: String,
+        required: true
+    },
     user_id: {
         type: ObjectId,
         ref: 'User',

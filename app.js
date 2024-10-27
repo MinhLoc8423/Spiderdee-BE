@@ -1,13 +1,20 @@
 const express = require('express');
 const app = express();
 const port = 8423;
+const cors = require('cors');
 const connectDB = require('./src/config/databaseConfig');
+require('./src/config/passportConfig');
+
+// Routes 
 const authRoutes = require('./src/routes/authRoute')
 const productRoutes = require('./src/routes/productRoute');
 const userRoute = require('./src/routes/userRoute');
 const categoryRoute = require('./src/routes/categoryRouter');
-const cors = require('cors');
-require('./src/config/passportConfig');
+const orderRoute = require('./src/routes/orderRouter');
+const orderDetailsRoute = require('./src/routes/orderDetailRouter');
+const reviewRoute = require('./src/routes/reviewRouter');
+
+
 
 
 app.use(cors({
@@ -21,10 +28,16 @@ app.use('/auth', authRoutes);
 app.use('/api', userRoute);
 app.use('/api', productRoutes);
 app.use('/api', categoryRoute);
+app.use('/api', orderRoute);
+app.use('/api', orderDetailsRoute);
+app.use('/api', reviewRoute);
 
 connectDB();
 
-  console.log(`Server is running on port ${port}`)
-app.listen(port, "192.168.1.2",() => {
+// app.listen(port, "192.168.1.2",() => {
+//   console.log(`Server is running on port 192.168.1.2:${port}`)
+// });
+
+app.listen(port,() => {
   console.log(`Server is running on port 192.168.1.2:${port}`)
 });
