@@ -6,12 +6,12 @@ const ShipmentSchema = new Schema({
     shipment_id: {
         type: ObjectId,
     },
-    address: {
+    name: {
         type: String,
         maxlength: 100,
         required: true
     },
-    state: {
+    address: {
         type: String,
         maxlength: 100,
         required: true

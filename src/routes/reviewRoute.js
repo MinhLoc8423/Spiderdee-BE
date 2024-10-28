@@ -6,7 +6,7 @@ const checkPermission = require('../middlewares/permissionMiddleware');
 
 router.get('/reviews', authenticate, checkPermission("perm_read_category"), reviewController.getAllReviews);
 
-router.get('/reviews/search', authenticate, checkPermission("perm_read_category"), reviewController.searchReviews);
+router.get('/reviews/filter', authenticate, checkPermission("perm_read_category"), reviewController.filterReview);
 
 router.get('/reviews/:id', authenticate, checkPermission("perm_read_product"), reviewController.getReviewByById);
 
