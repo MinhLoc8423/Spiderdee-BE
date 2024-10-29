@@ -10,6 +10,10 @@ const OrderDetailSchema = new Schema({
         type: Number,
         required: true
     },
+    name: {
+        type: String,
+        required: true
+    },
     price: {
         type: mongoose.Types.Decimal128,
         required: true

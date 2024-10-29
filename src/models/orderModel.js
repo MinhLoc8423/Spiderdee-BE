@@ -10,18 +10,21 @@ const OrderSchema = new Schema({
         type: mongoose.Types.Decimal128,
         required: true,
     },
+    payment_method: {
+        type: String,
+        required: true
+    },
     status: {
         type: String,
         required: true
     },
+    address: {
+        type: String,
+        required: true,
+    },
     user_id: {
         type: ObjectId,
         ref: 'User',
-        required: true,
-    },
-    shipment_id: {
-        type: ObjectId,
-        ref: 'Shipment',
         required: true,
     }
 }, { timestamps: true }); 
