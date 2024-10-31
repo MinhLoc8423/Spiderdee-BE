@@ -3,6 +3,7 @@ const WishList = require('../models/wishListModel');
 const User = require('../models/userModel');
 const Product = require('../models/productModel');
 const validateUtils = require('../utils/validateUtils');
+const Wishlist = require('../models/wishListModel');
 
 exports.getAllWishlists = async (req, res) => {
     try {
@@ -53,8 +54,8 @@ exports.getWishlistById = async (req, res) => {
 
 exports.createWishlist = async (req, res) => {
     try {
-        const { userId, product_id } = req.body;
-        if (!userId) {
+        const { user_id, product_id } = req.body;
+        if (!user_id) {
             return res.status(400).json({
                 status: 400,
                 message: 'User ID is required'
@@ -66,28 +67,28 @@ exports.createWishlist = async (req, res) => {
                 message: 'Product ID is required'
             });
         }
-        const existUser = await WishList.findOne({ userId });
+        const existUser = await User.findById({ _id: user_id });
         if (!existUser) {
             return res.status(404).json({
                 status: 404,
                 message: 'User not found'
             });
         }
-        const existProduct = await WishList.findOne({ product_id });
+        const existProduct = await Product.findById({ _id: product_id });
         if (!existProduct) {
             return res.status(404).json({
                 status: 404,
                 message: 'Product not found'
             });
         }
-        const existWishlist = await WishList.findOne({ userId, product_id });
+        const existWishlist = await WishList.findOne({ user_id, product_id });
         if (existWishlist) {
             return res.status(409).json({
                 status: 409,
                 message: 'Wishlist already exists'
             });
         }
-        const wishlistData = await WishList.create({ userId, product_id });
+        const wishlistData = await WishList.create({ user_id, product_id });
         res.status(201).json({
             status: 201,
             message: "Successful",
@@ -154,7 +155,7 @@ exports.updateWishlistById = async (req, res) => {
         res.status(500).json({
             status: 500,
             message: 'Error while updating wishlist',
-            errors: error,
+            errors: error.message,
         });
     }
 };
@@ -200,7 +201,7 @@ exports.getWishlistsByUserId = async (req, res) => {
                 message: 'User ID is required'
             });
         }
-        const wishlists = await WishList.find({ userId: id });
+        const wishlists = await Wishlist.find({ user_id: id }).populate('product_id');
         if (!wishlists) {
             return res.status(404).json({
                 status: 404,
@@ -213,6 +214,7 @@ exports.getWishlistsByUserId = async (req, res) => {
             data: wishlists,
         });
     } catch (error) {
+        console.log(error.message);
         res.status(500).json({
             status: 500,
             message: 'Error while retrieving wishlists',

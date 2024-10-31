@@ -8,9 +8,7 @@ router.post('/login', authController.localLogin);
 
 router.post('/register', authController.localRegister);
 
-router.get('/google', authController.googleLogin);
-
-router.get('/google/callback', passport.authenticate('google', { session: false }), authController.googleLoginCallback);
+router.post('/login-with-google', authController.googleLogin);
 
 router.post('/send-otp', authController.sendOTP);
 
