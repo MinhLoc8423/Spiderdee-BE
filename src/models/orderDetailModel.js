@@ -18,6 +18,10 @@ const OrderDetailSchema = new Schema({
         type: mongoose.Types.Decimal128,
         required: true
     },
+    size: {
+        type: String,
+        required: true
+    },
     order_id: {
         type: ObjectId,
         ref: "Order",

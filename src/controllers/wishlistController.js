@@ -88,17 +88,19 @@ exports.createWishlist = async (req, res) => {
                 message: 'Wishlist already exists'
             });
         }
-        const wishlistData = await WishList.create({ user_id, product_id });
+        const wishlistData = (await WishList.create({ user_id, product_id }));
+        const populatedWishlistData = await wishlistData.populate('product_id');
+        console.log(populatedWishlistData);
         res.status(201).json({
             status: 201,
             message: "Successful",
-            data: wishlistData,
+            data: populatedWishlistData,
         });
     } catch (error) {
         res.status(500).json({
             status: 500,
             message: 'Error while creating wishlist',
-            errors: error,
+            errors: error.message,
         });
     }
 };
@@ -170,7 +172,7 @@ exports.deleteWishlistById = async (req, res) => {
                 message: 'Wishlist ID is required'
             });
         }
-        const wishlistData = await WishList.findByIdAndDelete(id);
+        const wishlistData = await WishList.findByIdAndDelete(id).populate('product_id');
         if (!wishlistData) {
             return res.status(404).json({
                 status: 404,
@@ -179,7 +181,7 @@ exports.deleteWishlistById = async (req, res) => {
         }
         res.status(200).json({
             status: 200,
-            message: 'Successful',
+            message: 'Deleted Successful',
             data: wishlistData,
         });
     } catch (error) {

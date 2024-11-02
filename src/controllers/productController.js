@@ -47,8 +47,12 @@ exports.getProductById = async (req, res) => {
 
 exports.createProduct = async (req, res) => {
     try {
-        const { name, description, price, image, category_id } = req.body;
+        const { name, description, price, size,image, category_id } = req.body;
         var check = validateUtils.validateString(name)
+        if (check.valid) {
+            return res.status(400).json(check.message);
+        }
+        check = validateUtils.validateString(size)
         if (check.valid) {
             return res.status(400).json(check.message);
         }
@@ -74,6 +78,7 @@ exports.createProduct = async (req, res) => {
             description,
             price,
             image,
+            size,
             category_id,
         });
         const savedProduct = await newProduct.save();
@@ -102,7 +107,7 @@ exports.updateProductById = async (req, res) => {
                 message: 'Product ID is required'
             });
         }
-        const { name, description, price, image, category_id } = req.body;
+        const { name, description, size,price, image, category_id } = req.body;
 
         let check = validateUtils.validateString(name);
         if (check.valid) {
@@ -129,11 +134,19 @@ exports.updateProductById = async (req, res) => {
             return res.status(400).json(check.message);
         }
 
+        if (!size) {
+            return res.status(400).json({
+                status: 400,
+                message: "Size is required",
+            });
+        }
+
         const updateData = {
             name,
             description,
             price,
             image,
+            size,
             category_id,
         };
 

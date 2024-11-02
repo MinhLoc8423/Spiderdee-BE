@@ -89,7 +89,7 @@ exports.createOrder = async (req, res) => {
 
         const invalidDetails = orderDetails.filter(detail => {
             const product = productMap.get(detail.product_id);
-            return !product || detail.quantity <= 0 || detail.price < 0 || detail.price !== product.price;
+            return !product || detail.quantity <= 0 || detail.price < 0 || detail.price !== product.price || detail.size !== "";
         });
 
         if (invalidDetails.length > 0) {
@@ -126,7 +126,8 @@ exports.createOrder = async (req, res) => {
                 product_id: orderDetail.product_id,
                 quantity: orderDetail.quantity,
                 price: orderDetail.price,
-                name: product.name  // Add the product name here
+                name: product.name,
+                size: orderDetail.size
             });
             return orderDetailDoc.save();
         });
@@ -177,7 +178,7 @@ exports.updateOrderById = async (req, res) => {
 
         const invalidDetails = orderDetails.filter(detail => {
             const product = productMap.get(detail.product_id);
-            return !product || detail.quantity <= 0 || detail.price < 0 || detail.price !== product.price;
+            return !product || detail.quantity <= 0 || detail.price < 0 || detail.price !== product.price || detail.size !== "";
         });
 
         if (invalidDetails.length > 0) {
@@ -221,7 +222,8 @@ exports.updateOrderById = async (req, res) => {
                 product_id: orderDetail.product_id,
                 quantity: orderDetail.quantity,
                 price: orderDetail.price,
-                name: product.name  // Thêm tên sản phẩm ở đây
+                name: product.name,
+                size: orderDetail.size
             });
             return orderDetailDoc.save();
         });
