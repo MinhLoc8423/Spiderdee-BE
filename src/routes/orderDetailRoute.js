@@ -10,6 +10,8 @@ router.get('/order-details/analytics', authenticate, checkPermission("perm_read_
 
 router.get('/order-details/order/:id', authenticate, checkPermission("perm_read_product"), orderDetailController.getOrderDetailsByOrderId);
 
+router.get('/order-details/user/:id', authenticate, checkPermission("perm_read_product"), orderDetailController.getOrderDetailByUser);
+
 router.get('/order-details/:id', authenticate, checkPermission("perm_read_product"), orderDetailController.getOrderDetailByById);
 
 // router.post('/orderdetails', authenticate, checkPermission("perm_create_category"), orderDetailController.createOrderDetail);

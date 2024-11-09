@@ -17,9 +17,7 @@ const shippingRoute = require('./src/routes/shippingRoute');
 const wishListRoute = require('./src/routes/wishListRoute.js');
 const paymentRoute = require('./src/routes/paymentRoute');
 
-app.use(cors({
-  origin: 'http://localhost:3000', 
-}));
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

@@ -70,7 +70,7 @@ exports.updateUser = async (req, res) => {
                 message: 'Product ID is required'
             });
         }
-        const { first_name, last_name, phone_number, avatar } = req.body;
+        const { first_name, last_name, phone_number } = req.body;
         let check = validateUtils.validateString(first_name);
         if (check.valid) {
             return res.status(400).json(check.message);
@@ -84,16 +84,10 @@ exports.updateUser = async (req, res) => {
         if (check.valid) {
             return res.status(400).json(check.message);
         }
-
-        check = validateUtils.validateString(avatar);
-        if (check.valid) {
-            return res.status(400).json(check.message);
-        }
         const updateData = {
             first_name,
             last_name,
             phone_number,
-            avatar,
         };
         const user = await User.findByIdAndUpdate(id, updateData, {
             new: true,
@@ -111,7 +105,6 @@ exports.updateUser = async (req, res) => {
                 last_name: user.last_name,
                 email: user.email,
                 phone_number: user.phone_number,
-                avatar: user.avatar,
             },
         });
     } catch (error) {

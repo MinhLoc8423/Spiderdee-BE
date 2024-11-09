@@ -83,24 +83,28 @@ exports.createOrder = async (req, res) => {
         }
 
         // Validate products and add the name field
-        const productIds = orderDetails.map(detail => detail.product_id);
+        const productIds = orderDetails.map(detail => detail._id);
+        // console.log(productIds); 
         const existProducts = await Product.find({ _id: { $in: productIds } });
+        // console.log(existProducts);
         const productMap = new Map(existProducts.map(product => [product._id.toString(), product]));
+        //console.log(productMap);
 
         const invalidDetails = orderDetails.filter(detail => {
-            const product = productMap.get(detail.product_id);
-            return !product || detail.quantity <= 0 || detail.price < 0 || detail.price !== product.price || detail.size !== "";
+            const product = productMap.get(detail._id);
+            return !product || detail.quantity <= 0 || detail.price < 0 || detail.price !== product.price || detail.size.length == 0;
         });
+        // console.log(invalidDetails);
 
         if (invalidDetails.length > 0) {
             return res.status(400).json({
                 status: 400,
                 message: 'Some order details are invalid',
                 errors: invalidDetails.map(detail => ({
-                    product_id: detail.product_id,
-                    error: !productMap.has(detail.product_id)
+                    _id: detail._id,
+                    error: !productMap.has(detail._id)
                         ? 'Product does not exist'
-                        : detail.price !== productMap.get(detail.product_id).price
+                        : detail.price !== productMap.get(detail._id).price
                             ? 'Price mismatch'
                             : 'Invalid quantity or price'
                 }))
@@ -109,9 +113,12 @@ exports.createOrder = async (req, res) => {
 
         const total_price = orderDetails.reduce((prev, curr) => prev + (curr.price * curr.quantity), 0);
         const status = OrderStatus.PENDING;
+        const vat = total_price * 0.10;
+        const shipping = 0;
+        const totalAmount = total_price + vat + shipping;
 
         const newOrder = new Order({
-            total_price,
+            total_price: totalAmount,
             payment_method,
             status,
             address,
@@ -120,13 +127,12 @@ exports.createOrder = async (req, res) => {
         const savedOrder = await newOrder.save();
 
         const orderDetailPromises = orderDetails.map(orderDetail => {
-            const product = productMap.get(orderDetail.product_id);
             const orderDetailDoc = new OrderDetail({
                 order_id: savedOrder._id,
-                product_id: orderDetail.product_id,
+                product_id: orderDetail._id,
                 quantity: orderDetail.quantity,
                 price: orderDetail.price,
-                name: product.name,
+                name: orderDetail.name,
                 size: orderDetail.size
             });
             return orderDetailDoc.save();
@@ -227,7 +233,7 @@ exports.updateOrderById = async (req, res) => {
             });
             return orderDetailDoc.save();
         });
-        
+
         await Promise.all(orderDetailPromises);
 
         res.status(200).json({
@@ -314,7 +320,7 @@ exports.updateOrderStatus = async (req, res) => {
         const { id } = req.params;
         const { status, payment_method } = req.body;
 
-        // Validate required fields
+        // Kiểm tra các trường bắt buộc
         if (!id || !status) {
             return res.status(400).json({
                 status: 400,
@@ -322,7 +328,7 @@ exports.updateOrderStatus = async (req, res) => {
             });
         }
 
-        // Fetch the current order
+        // Lấy đơn hàng hiện tại
         const existingOrder = await Order.findById(id);
         if (!existingOrder) {
             return res.status(404).json({
@@ -331,56 +337,51 @@ exports.updateOrderStatus = async (req, res) => {
             });
         }
 
-        if (payment_method === PaymentMethod.CASH) {
-            // Skip 'Awaiting Payment' for COD
-            if (existingOrder.status === OrderStatus.PENDING && status === OrderStatus.CONFIRMED) {
-                existingOrder.status = OrderStatus.CONFIRMED;
-            } else if (existingOrder.status === OrderStatus.CONFIRMED && status === OrderStatus.PROCESSING) {
-                existingOrder.status = OrderStatus.PROCESSING;
-            } else if (existingOrder.status === OrderStatus.PROCESSING && status === OrderStatus.SHIPPED) {
-                existingOrder.status = OrderStatus.SHIPPED;
-            } else if (existingOrder.status === OrderStatus.SHIPPED && status === OrderStatus.DELIVERED) {
-                existingOrder.status = OrderStatus.DELIVERED;
-            } else if (existingOrder.status === OrderStatus.DELIVERED && status === 'Completed') {
-                existingOrder.status = 'Completed';
-            } else if (status === OrderStatus.CANCELLED) {
-                // Hủy đơn hàng
-                existingOrder.status = OrderStatus.CANCELLED;
-            } else {
-                return res.status(400).json({
-                    status: 400,
-                    message: 'Invalid status transition for COD',
-                });
-            }
-        } else if (payment_method === PaymentMethod.ZALOPAY) {
-            // ZaloPay order needs to go through 'Awaiting Payment'
-            if (existingOrder.status === OrderStatus.CONFIRMED && status === OrderStatus.PROCESSING) {
-                existingOrder.status = OrderStatus.PROCESSING;
-            } else if (existingOrder.status === OrderStatus.PROCESSING && status === OrderStatus.SHIPPED) {
-                existingOrder.status = OrderStatus.SHIPPED;
-            } else if (existingOrder.status === OrderStatus.DELIVERED && status === 'Completed') {
-                existingOrder.status = 'Completed';
-            } else if (status === OrderStatus.CANCELLED) {
-                // Hủy đơn hàng
-                existingOrder.status = OrderStatus.CANCELLED;
-            } else {
-                return res.status(400).json({
-                    status: 400,
-                    message: 'Invalid status transition for ZaloPay',
-                });
-            }
+        // Định nghĩa các chuyển đổi trạng thái hợp lệ dựa trên phương thức thanh toán
+        const statusTransitions = {
+            [PaymentMethod.CASH]: [
+                { from: OrderStatus.PENDING, to: OrderStatus.PAYMENT_CONFIRMED },
+                { from: OrderStatus.PAYMENT_CONFIRMED, to: OrderStatus.PROCESSING },
+                { from: OrderStatus.PROCESSING, to: OrderStatus.SHIPPING },
+                { from: OrderStatus.SHIPPING, to: OrderStatus.DELIVERED },
+                { from: OrderStatus.PROCESSING, to: OrderStatus.CANCELLED },
+                { from: OrderStatus.SHIPPING, to: OrderStatus.CANCELLED },
+            ],
+            [PaymentMethod.ZALOPAY]: [
+                { from: OrderStatus.AWAITING_PAYMENT, to: OrderStatus.PAYMENT_CONFIRMED },
+                { from: OrderStatus.PAYMENT_CONFIRMED, to: OrderStatus.PROCESSING },
+                { from: OrderStatus.PROCESSING, to: OrderStatus.SHIPPING },
+                { from: OrderStatus.SHIPPING, to: OrderStatus.DELIVERED },
+                { from: OrderStatus.PROCESSING, to: OrderStatus.CANCELLED },
+                { from: OrderStatus.SHIPPING, to: OrderStatus.CANCELLED },
+            ],
+        };
+
+        const allowedTransitions = statusTransitions[payment_method] || [];
+        const isValidTransition = allowedTransitions.some(
+            (transition) =>
+                transition.from === existingOrder.status &&
+                transition.to === status
+        );
+
+        if (!isValidTransition) {
+            return res.status(400).json({
+                status: 400,
+                message: `Invalid status transition from ${existingOrder.status} to ${status} for ${payment_method}`,
+            });
         }
 
-        // Save the updated status
+        // Cập nhật trạng thái đơn hàng nếu chuyển đổi hợp lệ
+        existingOrder.status = status;
         await existingOrder.save();
 
-        res.status(200).json({
+        return res.status(200).json({
             status: 200,
             message: 'Order status updated successfully',
             data: existingOrder,
         });
     } catch (error) {
-        res.status(500).json({
+        return res.status(500).json({
             status: 500,
             message: 'Error while updating order status',
             errors: error.message,

@@ -8,6 +8,10 @@ router.get('/reviews', authenticate, checkPermission("perm_read_category"), revi
 
 router.get('/reviews/filter', authenticate, checkPermission("perm_read_category"), reviewController.filterReview);
 
+router.post('/reviews/order-detail', authenticate, checkPermission("perm_read_product"), reviewController.getReviewsByOrderDetailIds);
+
+router.post('/reviews/product', authenticate, checkPermission("perm_read_product"), reviewController.getReviewByProductId);
+
 router.get('/reviews/:id', authenticate, checkPermission("perm_read_product"), reviewController.getReviewByById);
 
 router.post('/reviews', authenticate, checkPermission("perm_create_category"), reviewController.createReview);

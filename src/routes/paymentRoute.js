@@ -18,7 +18,7 @@ const config = paymentConfig.config;
  */
 router.post('/payment', async (req, res) => {
     try {
-        const id = req.body.id;
+        const id = req.body.order_id;
 
         if (!id) {
             return res.status(400).json({
@@ -49,7 +49,7 @@ router.post('/payment', async (req, res) => {
         // Kiểm tra link hiện tại trong PaymentLink
         const existingLink = await Payment.findOne({ order_id: id, status: 3 });
         if (existingLink && (!existingLink.expiresAt || existingLink.expiresAt > new Date())) {
-            return res.status(200).json({ payment_url: existingLink.payment_url });
+            return res.status(200).json({ order_url: existingLink.payment_url });
         }
 
         // Tạo mảng items để lưu thông tin sản phẩm đặt hàng
@@ -93,7 +93,7 @@ router.post('/payment', async (req, res) => {
             const paymentLink = new Payment({
                 order_id: id,
                 payment_url: result.data.order_url,
-                expiresAt: moment().add(15, 'minutes').toDate(), // Thời hạn sử dụng link (nếu có)
+                expiresAt: moment().add(15, 'minutes').toDate(), 
             });
             await paymentLink.save();
         }
@@ -129,7 +129,7 @@ router.post('/callback', async (req, res) => {
             let str = dataJson['app_trans_id'];
             let index = str.indexOf("_");
             let order_id = str.slice(index + 1);
-            await Order.updateOne({ _id: order_id }, { $set: { status: OrderStatus.CONFIRMED } });
+            await Order.updateOne({ _id: order_id }, { $set: { status: OrderStatus.PAYMENT_CONFIRMED } });
             await Payment.deleteOne({ order_id: order_id });
             console.log(
                 "update order's status = success where app_trans_id =",
@@ -179,7 +179,7 @@ router.post('/check-status-order', async (req, res) => {
         let index = str.indexOf("_");
         let order_id = str.slice(index + 1);
         if (result.data.return_code == 1) {
-            await Order.updateOne({ _id: order_id }, { $set: { status: OrderStatus.CONFIRMED } });
+            await Order.updateOne({ _id: order_id }, { $set: { status: OrderStatus.PAYMENT_CONFIRMED } });
             await Payment.deleteOne({ order_id: order_id });
         }
         if (result.data.return_code == 2) {

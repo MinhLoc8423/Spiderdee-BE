@@ -4,7 +4,7 @@ const validateUtils = require('../utils/validateUtils');
 
 exports.getAllProducts = async (req, res) => {
     try {
-        const products = await Product.find({}).populate('category_id').limit(50);
+        const products = await Product.find({}).populate('category_id').limit(60);
         res.status(200).json({
             status: 200,
             message: "Successful",
@@ -52,10 +52,6 @@ exports.createProduct = async (req, res) => {
         if (check.valid) {
             return res.status(400).json(check.message);
         }
-        check = validateUtils.validateString(size)
-        if (check.valid) {
-            return res.status(400).json(check.message);
-        }
         check = validateUtils.validateString(description)
         if (check.valid) {
             return res.status(400).json(check.message);
@@ -71,6 +67,13 @@ exports.createProduct = async (req, res) => {
         check = validateUtils.validateString(category_id)
         if (check.valid) {
             return res.status(400).json(check.message);
+        }
+
+        if (!size) {
+            return res.status(400).json({
+                status: 400,
+                message: "Size is required",
+            });
         }
 
         const newProduct = new Product({
