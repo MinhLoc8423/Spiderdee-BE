@@ -5,12 +5,13 @@ const Order = require('../models/orderModel');
 const OrderDetail = require('../models/orderDetailModel');
 const Product = require('../models/productModel');
 const validateUtils = require('../utils/validateUtils');
+const { OrderStatus, PaymentMethod } = require('../../constants/constants');
 
 exports.getAllReviews = async (req, res) => {
     try {
         const reviewData = await Review.find({})
-            .populate({ path: 'user_id', select: 'name email' })
-            .populate({ path: 'product_id', select: 'name price' })
+            .populate({ path: 'user_id', select: 'first_name last_name email' })
+            .populate({ path: 'product_id', select: 'first_name last_name price' })
             .populate({ path: 'order_detail_id'})
             .limit(50);
         res.status(200).json({
@@ -33,8 +34,8 @@ exports.getReviewByById = async (req, res) => {
             });
         }
         const reviewData = await Review.findById(id)
-            .populate({ path: 'user_id', select: 'name email' })
-            .populate({ path: 'product_id', select: 'name price' })
+            .populate({ path: 'user_id', select: 'first_name last_name email' })
+            .populate({ path: 'product_id', select: 'first_name last_name price' })
             .populate({ path: 'order_detail_id'});
         if (!reviewData) {
             return res.status(404).json({
@@ -56,10 +57,63 @@ exports.getReviewByById = async (req, res) => {
     }
 };
 
+exports.getReviewsByOrderDetailIds = async (req, res) => {
+    try {
+        const { orderDetailIds } = req.body;
+        console.log(`Order Detail IDs: ${orderDetailIds}`);
+        // Kiểm tra đầu vào
+        if (!orderDetailIds || !Array.isArray(orderDetailIds) || orderDetailIds.length === 0) {
+            return res.status(400).json({
+                status: 400,
+                message: 'Order detail IDs are required and should be an array'
+            });
+        }
+
+        // Lấy các review tương ứng với order_detail_id trong mảng
+        const reviews = await Review.find({ order_detail_id: { $in: orderDetailIds } })
+            .populate({ path: 'user_id', select: 'name email' })
+            .populate({ path: 'product_id', select: 'name price' })
+            .populate({ path: 'order_detail_id' });
+
+        res.status(200).json({
+            status: 200,
+            message: "Successfully retrieved reviews",
+            data: reviews,
+        });
+    } catch (error) {
+        console.error("Error while retrieving reviews:", error);
+        return res.status(500).json({
+            status: 500,
+            message: 'Error while retrieving reviews',
+            errors: error,
+        });
+    }
+};
+
+exports.getReviewByProductId = async (req, res) => {
+    try {
+        const { productId } = req.body;
+        if (!productId) {
+            return res.status(400).json({
+                status: 400,
+                message: 'Product ID is required'
+            });
+        }
+        const reviewData = await Review.find({ product_id: productId }).populate({ path: 'user_id', select: 'first_name last_name email' });
+        res.status(200).json({
+            status: 200,
+            message: "Successful",
+            data: reviewData,
+        });
+    } catch (error) {
+        return res.status(500).json({ status: 500, message: 'Error while retrieving review', errors: error });
+    }
+};
+
 exports.createReview = async (req, res) => {
     try {
         const { comment, rating, product_id, user_id, order_detail_id } = req.body;
-
+        console.log(`Comment: ${comment}, Rating: ${rating}, Product ID: ${product_id}, User ID: ${user_id}, Order Detail ID: ${order_detail_id}`);
         // Validate input
         let check = validateUtils.validateString(comment);
         if (check.valid) {
@@ -102,7 +156,6 @@ exports.createReview = async (req, res) => {
         if (!existOrderDetail) {
             return res.status(400).json({ status: 400, message: 'Order detail doesn\'t exist' });
         }
-
         // Check if the review already exists
         const existingReview = await Review.findOne({ 
             product_id, 
@@ -119,7 +172,7 @@ exports.createReview = async (req, res) => {
 
         // Check if the order is delivered
         const order = await Order.findById(existOrderDetail.order_id).lean();
-        if (!order || order.status !== "Delivered") {
+        if (!order || order.status !== OrderStatus.DELIVERED) {
             return res.status(403).json({
                 status: 403,
                 message: 'You can only review products from delivered orders.',

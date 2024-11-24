@@ -4,7 +4,7 @@ const validateUtils = require('../utils/validateUtils');
 
 exports.getAllProducts = async (req, res) => {
     try {
-        const products = await Product.find({}).populate('category_id').limit(50);
+        const products = await Product.find({}).populate('category_id').limit(60).exec();
         res.status(200).json({
             status: 200,
             message: "Successful",
@@ -47,7 +47,7 @@ exports.getProductById = async (req, res) => {
 
 exports.createProduct = async (req, res) => {
     try {
-        const { name, description, price, image, category_id } = req.body;
+        const { name, description, price, size,image, category_id } = req.body;
         var check = validateUtils.validateString(name)
         if (check.valid) {
             return res.status(400).json(check.message);
@@ -69,11 +69,19 @@ exports.createProduct = async (req, res) => {
             return res.status(400).json(check.message);
         }
 
+        if (!size) {
+            return res.status(400).json({
+                status: 400,
+                message: "Size is required",
+            });
+        }
+
         const newProduct = new Product({
             name,
             description,
             price,
             image,
+            size,
             category_id,
         });
         const savedProduct = await newProduct.save();
@@ -102,7 +110,7 @@ exports.updateProductById = async (req, res) => {
                 message: 'Product ID is required'
             });
         }
-        const { name, description, price, image, category_id } = req.body;
+        const { name, description, size,price, image, category_id } = req.body;
 
         let check = validateUtils.validateString(name);
         if (check.valid) {
@@ -129,11 +137,19 @@ exports.updateProductById = async (req, res) => {
             return res.status(400).json(check.message);
         }
 
+        if (!size) {
+            return res.status(400).json({
+                status: 400,
+                message: "Size is required",
+            });
+        }
+
         const updateData = {
             name,
             description,
             price,
             image,
+            size,
             category_id,
         };
 
@@ -214,9 +230,16 @@ exports.searchProducts = async (req, res) => {
         } else if (req.query.max_price) {
             query.price = { $lte: req.query.max_price };
         }
-        console.log(query);
 
-        const products = await Product.find(query).populate('category_id').limit(50);
+        let sort = {};
+        if (req.query.sort_by === 'desc') {
+            sort = { price: -1 };
+        }
+        else if (req.query.sort_by === 'asc') {
+            sort = { price: 1 };
+        }
+
+        const products = await Product.find(query).populate('category_id').sort(sort).limit(50);
         res.status(200).json({
             status: 200,
             message: "Successful",
@@ -226,3 +249,4 @@ exports.searchProducts = async (req, res) => {
         res.status(500).json({ status: 200, message: 'Error searching products', error: error.message });
     }
 };
+

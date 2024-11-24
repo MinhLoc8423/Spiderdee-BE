@@ -11,6 +11,10 @@ const ShipmentSchema = new Schema({
         maxlength: 100,
         required: true
     },
+    isDefault: {
+        type: Boolean,
+        default: false
+    },
     address: {
         type: String,
         maxlength: 100,

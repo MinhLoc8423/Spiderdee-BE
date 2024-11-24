@@ -16,10 +16,10 @@ exports.getAllOrderDetails = async (req, res) => {
             data: orderDetails,
         });
     } catch (error) {
-        return res.status(500).json({ 
-            status: 500, 
-            message: 'Error while retrieving order details', 
-            errors: error 
+        return res.status(500).json({
+            status: 500,
+            message: 'Error while retrieving order details',
+            errors: error
         });
     }
 };
@@ -92,6 +92,64 @@ exports.getOrderDetailsByOrderId = async (req, res) => {
     }
 };
 
+exports.getOrderDetailByUser = async (req, res) => {
+    try {
+        const { id } = req.params; // Lấy user ID từ params
+
+        if (!id) {
+            return res.status(400).json({
+                status: 400,
+                message: 'User ID is required.'
+            });
+        }
+        
+        // Step 1: Find all orders for the specified user
+        const userOrders = await Order.find({ user_id: id }).sort( { createdAt: -1 } ).exec();
+        console.log(userOrders);
+
+        // Step 2: Extract order IDs to use for querying order details
+        const orderIds = userOrders.map(order => order._id);
+        console.log(orderIds);
+
+        // Step 3: Find all order details related to the user's orders
+        const orderDetails = await OrderDetail.find({ order_id: { $in: orderIds } })
+            .populate("product_id", "name description price image size")
+            .exec();
+        console.log(orderDetails);
+
+        // Step 4: Structure the response to group details by each order
+        const orderDetailsByOrder = userOrders.map(order => {
+            const details = orderDetails.filter(detail => detail.order_id.equals(order._id));
+            return {
+                order_id: order._id,
+                total_price: order.total_price,
+                payment_method: order.payment_method,
+                status: order.status,
+                order_date: order.createdAt,
+                address: order.address,
+                products: details.map(detail => ({
+                    order_detail_id: detail._id, // Thêm order_detail_id vào sản phẩm
+                    product_id: detail.product_id._id,
+                    name: detail.product_id.name,
+                    description: detail.product_id.description,
+                    price: detail.product_id.price,
+                    image: detail.product_id.image,
+                    size: detail.size,
+                    quantity: detail.quantity,
+                })),
+            };
+        });
+        
+        res.status(200).json({
+            status: 200,
+            message: "Order details retrieved successfully.",
+            data: orderDetailsByOrder,
+        });
+    } catch (error) {
+        console.error("Error fetching order details by user:", error);
+        throw new Error("Could not fetch order details");
+    }
+};
 
 exports.createOrderDetail = async (req, res) => {
     try {
@@ -243,7 +301,7 @@ exports.deleteOrderDetailById = async (req, res) => {
 exports.analyticsDataDetail = async (req, res) => {
     try {
         const { from, to } = req.query;
-        
+
         if (!from || !to) {
             return res.status(400).json({
                 status: 400,
@@ -251,19 +309,38 @@ exports.analyticsDataDetail = async (req, res) => {
             });
         }
 
+        // Chuyển từ chuỗi `from` và `to` thành đối tượng Date
+        const fromDate = new Date(from);
+        const toDate = new Date(to);
+
+        // Đảm bảo từ ngày `from` sẽ bắt đầu từ đầu tháng và `to` sẽ kết thúc tại cuối tháng
+        fromDate.setDate(1); // Đặt ngày đầu tiên của tháng
+        toDate.setMonth(toDate.getMonth() + 1); // Chuyển đến tháng tiếp theo
+        toDate.setDate(0); // Đặt ngày cuối cùng của tháng
+
+        // Truy vấn MongoDB với aggregation pipeline
         const analyticsData = await OrderDetail.aggregate([
             {
                 $match: {
-                    createdAt: { $gte: new Date(from), $lte: new Date(to) }
+                    createdAt: { $gte: fromDate, $lte: toDate }
+                }
+            },
+            {
+                $project: {
+                    yearMonth: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+                    quantity: 1,
+                    price: 1
                 }
             },
             {
                 $group: {
-                    _id: 0,
-                    name: "$_id",
+                    _id: "$yearMonth",  // Nhóm theo tháng
                     totalQuantity: { $sum: "$quantity" },
                     totalPrice: { $sum: "$price" }
                 }
+            },
+            {
+                $sort: { _id: 1 } // Sắp xếp theo tháng
             }
         ]);
 
@@ -280,4 +357,5 @@ exports.analyticsDataDetail = async (req, res) => {
         });
     }
 };
+
 

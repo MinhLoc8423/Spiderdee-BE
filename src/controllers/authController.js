@@ -5,6 +5,7 @@ const validateUtils = require('../utils/validateUtils');
 const User = require('../models/userModel');
 const transporter = require('../config/emailConfig');
 const Role = require('../models/roleModel');
+const axios = require('axios');
 require('dotenv').config();
 
 
@@ -36,7 +37,6 @@ exports.localLogin = (req, res, next) => {
             phone_number: user.phone_number,
             avatar: user.avatar,
         }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
         res.status(200).json({
             status: 200,
             message: "Login successful",
@@ -48,8 +48,8 @@ exports.localLogin = (req, res, next) => {
                 role_id: user.role_id,
                 phone_number: user.phone_number,
                 avatar: user.avatar,
+                token: token,
             },
-            token: token
         });
     })(req, res, next);
 };
@@ -104,41 +104,75 @@ exports.localRegister = async (req, res) => {
     }
 };
 
-exports.googleLogin = passport.authenticate('google', { scope: ['profile', 'email'] });
-
-exports.googleLoginCallback = async (req, res) => {
+exports.googleLogin = async (req, res) => {
+    const { token } = req.body;
+    console.log(token);
     try {
-        const token = jwt.sign({
-            id: req.user._id,
-            first_name: req.user.first_name,
-            last_name: req.user.last_name,
-            email: req.user.email,
-            role_id: req.user.role_id,
-            phone_number: req.user.phone_number,
-            avatar: req.user.avatar,
+        // Bước 1: Xác thực token
+        if (!token) {
+            return res.status(401).json({ error: 'Missing token' });
+        }
+        const tokenResponse = await axios.get(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
+        
+        if (tokenResponse.data.error || !tokenResponse.data.email) {
+            return res.status(401).json({ error: 'Invalid token or missing email' });
+        }
+
+        // Bước 2: Lấy thông tin người dùng từ Google UserInfo API
+        const googleResponse = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const userInfo = googleResponse.data;
+
+        if (!userInfo.email) {
+            return res.status(401).json({ error: 'Failed to retrieve user information' });
+        }
+
+        let user = await User.findOne({ email: userInfo.email }).populate('role_id');
+        if (!user) {
+            const role = await Role.findOne({ role_name: "User" });
+            if (!role) {
+                return res.status(500).json({ error: 'User role not found' });
+            }
+            user = new User({
+                first_name: userInfo.given_name,
+                last_name: userInfo.family_name,
+                email: userInfo.email,
+                avatar: userInfo.picture,
+                password: "",
+                role_id: role._id,
+            });
+            await user.save();
+        }
+
+        const jwtToken = jwt.sign({
+            id: user._id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            email: user.email,
+            role_id: user.role_id,
+            phone_number: user.phone_number,
+            avatar: user.avatar,
         }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        res.status(200).json({
+        return res.status(200).json({
             status: 200,
-            message: 'Login successful',
+            message: "Login with Google successful",
             data: {
-                user: {
-                    _id: req.user._id,
-                    first_name: req.user.first_name,
-                    last_name: req.user.last_name,
-                    email: req.user.email,
-                    role_id: req.user.role_id,
-                    phone_number: req.user.phone_number,
-                    avatar: req.user.avatar,
-                }, token: token
+                user_id: user._id,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                email: user.email,
+                role_id: user.role_id,
+                phone_number: user.phone_number,
+                avatar: user.avatar,
+                token: jwtToken
             },
         });
+
     } catch (error) {
-        res.status(500).json({
-            status: 500,
-            message: 'Internal server error',
-            errors: error
-        });
+        console.error('Error verifying token:', error);
+        return res.status(500).json({ error: 'Failed to verify token' });
     }
 };
 
