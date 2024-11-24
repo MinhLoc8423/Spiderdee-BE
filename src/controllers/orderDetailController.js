@@ -104,7 +104,7 @@ exports.getOrderDetailByUser = async (req, res) => {
         }
         
         // Step 1: Find all orders for the specified user
-        const userOrders = await Order.find({ user_id: id });
+        const userOrders = await Order.find({ user_id: id }).sort( { createdAt: -1 } ).exec();
         console.log(userOrders);
 
         // Step 2: Extract order IDs to use for querying order details
@@ -309,19 +309,38 @@ exports.analyticsDataDetail = async (req, res) => {
             });
         }
 
+        // Chuyển từ chuỗi `from` và `to` thành đối tượng Date
+        const fromDate = new Date(from);
+        const toDate = new Date(to);
+
+        // Đảm bảo từ ngày `from` sẽ bắt đầu từ đầu tháng và `to` sẽ kết thúc tại cuối tháng
+        fromDate.setDate(1); // Đặt ngày đầu tiên của tháng
+        toDate.setMonth(toDate.getMonth() + 1); // Chuyển đến tháng tiếp theo
+        toDate.setDate(0); // Đặt ngày cuối cùng của tháng
+
+        // Truy vấn MongoDB với aggregation pipeline
         const analyticsData = await OrderDetail.aggregate([
             {
                 $match: {
-                    createdAt: { $gte: new Date(from), $lte: new Date(to) }
+                    createdAt: { $gte: fromDate, $lte: toDate }
+                }
+            },
+            {
+                $project: {
+                    yearMonth: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+                    quantity: 1,
+                    price: 1
                 }
             },
             {
                 $group: {
-                    _id: 0,
-                    name: "$_id",
+                    _id: "$yearMonth",  // Nhóm theo tháng
                     totalQuantity: { $sum: "$quantity" },
                     totalPrice: { $sum: "$price" }
                 }
+            },
+            {
+                $sort: { _id: 1 } // Sắp xếp theo tháng
             }
         ]);
 
@@ -338,4 +357,5 @@ exports.analyticsDataDetail = async (req, res) => {
         });
     }
 };
+
 

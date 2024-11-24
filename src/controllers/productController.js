@@ -4,7 +4,7 @@ const validateUtils = require('../utils/validateUtils');
 
 exports.getAllProducts = async (req, res) => {
     try {
-        const products = await Product.find({}).populate('category_id').limit(60);
+        const products = await Product.find({}).populate('category_id').limit(60).exec();
         res.status(200).json({
             status: 200,
             message: "Successful",
@@ -230,9 +230,16 @@ exports.searchProducts = async (req, res) => {
         } else if (req.query.max_price) {
             query.price = { $lte: req.query.max_price };
         }
-        console.log(query);
 
-        const products = await Product.find(query).populate('category_id').limit(50);
+        let sort = {};
+        if (req.query.sort_by === 'desc') {
+            sort = { price: -1 };
+        }
+        else if (req.query.sort_by === 'asc') {
+            sort = { price: 1 };
+        }
+
+        const products = await Product.find(query).populate('category_id').sort(sort).limit(50);
         res.status(200).json({
             status: 200,
             message: "Successful",
@@ -242,3 +249,4 @@ exports.searchProducts = async (req, res) => {
         res.status(500).json({ status: 200, message: 'Error searching products', error: error.message });
     }
 };
+

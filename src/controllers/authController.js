@@ -48,7 +48,7 @@ exports.localLogin = (req, res, next) => {
                 role_id: user.role_id,
                 phone_number: user.phone_number,
                 avatar: user.avatar,
-                token: token
+                token: token,
             },
         });
     })(req, res, next);
@@ -106,9 +106,12 @@ exports.localRegister = async (req, res) => {
 
 exports.googleLogin = async (req, res) => {
     const { token } = req.body;
-
+    console.log(token);
     try {
         // Bước 1: Xác thực token
+        if (!token) {
+            return res.status(401).json({ error: 'Missing token' });
+        }
         const tokenResponse = await axios.get(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
         
         if (tokenResponse.data.error || !tokenResponse.data.email) {
@@ -125,7 +128,7 @@ exports.googleLogin = async (req, res) => {
             return res.status(401).json({ error: 'Failed to retrieve user information' });
         }
 
-        let user = await User.findOne({ email: userInfo.email });
+        let user = await User.findOne({ email: userInfo.email }).populate('role_id');
         if (!user) {
             const role = await Role.findOne({ role_name: "User" });
             if (!role) {
@@ -148,6 +151,7 @@ exports.googleLogin = async (req, res) => {
             last_name: user.last_name,
             email: user.email,
             role_id: user.role_id,
+            phone_number: user.phone_number,
             avatar: user.avatar,
         }, process.env.JWT_SECRET, { expiresIn: '1h' });
 

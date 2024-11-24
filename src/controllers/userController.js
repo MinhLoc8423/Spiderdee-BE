@@ -80,7 +80,7 @@ exports.updateUser = async (req, res) => {
         if (check.valid) {
             return res.status(400).json(check.message);
         }
-        check = validateUtils.validateNumber(phone_number);
+        check = validateUtils.validatePhone(phone_number);
         if (check.valid) {
             return res.status(400).json(check.message);
         }
@@ -89,6 +89,64 @@ exports.updateUser = async (req, res) => {
             last_name,
             phone_number,
         };
+        const user = await User.findByIdAndUpdate(id, updateData, {
+            new: true,
+            runValidators: true,
+        });
+        if (!user) {
+            return res.status(404).json({ status: 404, message: 'User not found' });
+        }
+        res.status(200).json({
+            status: 200, 
+            message: 'User updated successfully', 
+            data: {
+                role: user.role_id,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                email: user.email,
+                phone_number: user.phone_number,
+            },
+        });
+    } catch (error) {
+        res.status(400).json({ status: 400, message: 'Error updating user', error: error.message });
+    }
+};
+
+exports.updateUserByAdmin = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id) {
+            return res.status(400).json({
+                status: 400,
+                message: 'Product ID is required'
+            });
+        }
+        const { first_name, last_name, phone_number, role_id } = req.body;
+        let check = validateUtils.validateString(first_name);
+        if (check.valid) {
+            return res.status(400).json(check.message);
+        }
+
+        check = validateUtils.validateString(last_name);
+        if (check.valid) {
+            return res.status(400).json(check.message);
+        }
+        check = validateUtils.validatePhone(phone_number);
+        if (check.valid) {
+            return res.status(400).json(check.message);
+        }
+        const role = await Role.findById(role_id);
+        if (!role) {
+            return res.status(404).json({ status: 404, message: 'Role not found' });
+        }
+        console.log("updateUserByAdmin2", id, first_name, last_name, phone_number, role_id);
+        const updateData = {
+            first_name,
+            last_name,
+            phone_number,
+            role_id,
+        };
+        console.log("updateData", updateData);
         const user = await User.findByIdAndUpdate(id, updateData, {
             new: true,
             runValidators: true,

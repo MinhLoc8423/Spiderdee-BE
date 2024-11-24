@@ -319,7 +319,7 @@ exports.updateOrderStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status, payment_method } = req.body;
-
+        console.log(req.body);
         // Kiểm tra các trường bắt buộc
         if (!id || !status) {
             return res.status(400).json({
@@ -344,18 +344,24 @@ exports.updateOrderStatus = async (req, res) => {
                 { from: OrderStatus.PAYMENT_CONFIRMED, to: OrderStatus.PROCESSING },
                 { from: OrderStatus.PROCESSING, to: OrderStatus.SHIPPING },
                 { from: OrderStatus.SHIPPING, to: OrderStatus.DELIVERED },
+                { from: OrderStatus.PENDING, to: OrderStatus.CANCELLED },
+                { from: OrderStatus.PAYMENT_CONFIRMED, to: OrderStatus.CANCELLED },
                 { from: OrderStatus.PROCESSING, to: OrderStatus.CANCELLED },
                 { from: OrderStatus.SHIPPING, to: OrderStatus.CANCELLED },
+                { from: OrderStatus.DELIVERED, to: OrderStatus.CANCELLED }
             ],
             [PaymentMethod.ZALOPAY]: [
                 { from: OrderStatus.AWAITING_PAYMENT, to: OrderStatus.PAYMENT_CONFIRMED },
                 { from: OrderStatus.PAYMENT_CONFIRMED, to: OrderStatus.PROCESSING },
                 { from: OrderStatus.PROCESSING, to: OrderStatus.SHIPPING },
                 { from: OrderStatus.SHIPPING, to: OrderStatus.DELIVERED },
+                { from: OrderStatus.AWAITING_PAYMENT, to: OrderStatus.CANCELLED },
+                { from: OrderStatus.PAYMENT_CONFIRMED, to: OrderStatus.CANCELLED },
                 { from: OrderStatus.PROCESSING, to: OrderStatus.CANCELLED },
                 { from: OrderStatus.SHIPPING, to: OrderStatus.CANCELLED },
-            ],
-        };
+                { from: OrderStatus.DELIVERED, to: OrderStatus.CANCELLED }
+            ]
+        };        
 
         const allowedTransitions = statusTransitions[payment_method] || [];
         const isValidTransition = allowedTransitions.some(

@@ -216,6 +216,7 @@ exports.deleteShippingById = async (req, res) => {
 exports.getShippingsByUserId = async (req, res) => {
     try {
         const { user_id } = req.params;
+        console.log("Getting shippings for user:", user_id);
         if (!user_id) {
             return res.status(400).json({
                 status: 400,
@@ -223,12 +224,6 @@ exports.getShippingsByUserId = async (req, res) => {
             });
         }
         const shippings = await Shipment.find({ user_id });
-        if (!shippings.length) {
-            return res.status(404).json({
-                status: 404,
-                message: "Shippings not found",
-            });
-        }
         res.status(200).json({
             status: 200,
             message: "Successful",

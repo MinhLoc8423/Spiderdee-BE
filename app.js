@@ -9,6 +9,7 @@ require('./src/config/passportConfig');
 const authRoute = require('./src/routes/authRoute')
 const productRoute = require('./src/routes/productRoute');
 const userRoute = require('./src/routes/userRoute');
+const roleRoute = require('./src/routes/roleRoute');
 const categoryRoute = require('./src/routes/categoryRoute');
 const orderRoute = require('./src/routes/orderRoute');
 const orderDetailsRoute = require('./src/routes/orderDetailRoute');
@@ -23,6 +24,7 @@ app.use(express.urlencoded({ extended: false }));
 
 app.get('/', (req, res) => { res.send('Welcome to Spideree') });
 app.use('/auth', authRoute);
+app.use('/api', roleRoute);
 app.use('/api', userRoute);
 app.use('/api', productRoute);
 app.use('/api', categoryRoute);
