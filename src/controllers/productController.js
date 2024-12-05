@@ -25,6 +25,7 @@ exports.getProductById = async (req, res) => {
             });
         }
         const product = await Product.findById(id).populate('category_id');
+        console.log("Đây là product",product)
         if (!product) {
             return res.status(404).json({
                 status: 404,
