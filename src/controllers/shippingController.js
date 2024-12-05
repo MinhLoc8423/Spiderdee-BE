@@ -202,6 +202,7 @@ exports.deleteShippingById = async (req, res) => {
         res.status(200).json({
             status: 200,
             message: "Shipping deleted successfully",
+            data: deletedShipping,
         });
     } catch (error) {
         res.status(500).json({
